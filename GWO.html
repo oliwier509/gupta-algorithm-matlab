@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Grey Wolf Optimizer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: radial-gradient(ellipse at center, #e0e7ef 0%, #b6c6e0 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-top: 30px;
+            color: #2c3e50;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px #fff, 0 1px 0 #b6c6e0;
+            text-align: center;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 30px;
+        }
+
+        #controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 18px;
+            box-shadow: 0 4px 24px 0 rgba(44, 62, 80, 0.10);
+            padding: 30px 30px 20px 30px;
+            margin-right: 40px;
+            min-width: 320px;
+        }
+
+        .control-group {
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+        }
+
+        .control-group label {
+            flex: 0 0 120px;
+            text-align: right;
+            margin-right: 12px;
+            color: #34495e;
+            font-weight: 500;
+            font-size: 1.05em;
+        }
+
+        .control-group input[type="range"] {
+            flex: 1 1 120px;
+            margin: 0 10px;
+            accent-color: #3b82f6;
+        }
+
+        .control-group span {
+            text-align: left;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        button {
+            padding: 10px 28px;
+            margin: 0 8px 10px 0;
+            border: none;
+            border-radius: 7px;
+            font-size: 1.08em;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px 0 rgba(44, 62, 80, 0.10);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        button:disabled {
+            background: #b6c6e0;
+            color: #fff;
+            cursor: not-allowed;
+        }
+
+        #legend {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 18px;
+            box-shadow: 0 4px 24px 0 rgba(44, 62, 80, 0.10);
+            padding: 24px 30px 18px 30px;
+            margin-top: 30px;
+            margin-left: 40px;
+            min-width: 220px;
+        }
+
+        #legend h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.15em;
+            letter-spacing: 1px;
+        }
+
+        .legend-item {
+            margin-bottom: 10px;
+            font-size: 1em;
+            color: #34495e;
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px 0 rgba(44, 62, 80, 0.10);
+        }
+
+        .legend-orange {
+            background: linear-gradient(135deg, #ffb347 0%, #ffcc80 100%);
+        }
+
+        .legend-red {
+            background: linear-gradient(135deg, #ff4e50 0%, #f9d423 100%);
+        }
+
+        .legend-green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .legend-blue {
+            background: linear-gradient(135deg, #36d1c4 0%, #5b86e5 100%);
+        }
+
+        .legend-yellow {
+            background: linear-gradient(135deg, #fff700 0%, #ffe259 100%);
+            border: 2px solid #f1c40f;
+        }
+
+        .legend-black {
+            background: linear-gradient(135deg, #232526 0%, #414345 100%);
+        }
+
+        #gwoCanvas {
+            border-radius: 18px;
+            box-shadow: 0 4px 24px 0 rgba(44, 62, 80, 0.13);
+            background: radial-gradient(ellipse at center, #e0e7ef 0%, #b6c6e0 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Grey Wolf Optimizer</h1>
+    <div id="main">
+        <div id="controls">
+            <div class="control-group">
+                <label>Iteracje:</label>
+                <input type="range" id="iterationsRange" min="1" max="50" value="25" step="1">
+                <span id="iterationsValue">25</span>
+            </div>
+            <div class="control-group">
+                <label>Delay (ms):</label>
+                <input type="range" id="delayRange" min="500" max="1000" value="500" step="10">
+                <span id="delayValue">500</span>
+            </div>
+            <div class="control-group">
+                <label>Klatka:</label>
+                <input type="range" id="frameRange" min="0" max="0" value="0" step="1">
+                <span id="frameValue">0</span>/<span id="maxFrameValue">0</span>
+            </div>
+            <div class="control-group">
+                <label>Populacja:</label>
+                <input type="range" id="populationRange" min="10" max="100" value="50" step="1">
+                <span id="populationValue">50</span>
+            </div>
+            <button id="runBtn">Odtwórz symulacje</button>
+            <button id="stopBtn">Stop</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        <canvas id="gwoCanvas" width="600" height="600"></canvas>
+        <div id="legend">
+            <h2>Legenda</h2>
+            <div class="legend-item"><span class="legend-color legend-orange"></span> Idealne optimum (0,0)</div>
+            <div class="legend-item"><span class="legend-color legend-red"></span> Alpha Wolf (Najlepszy)</div>
+            <div class="legend-item"><span class="legend-color legend-green"></span> Beta Wolf (2 Najlepszy)</div>
+            <div class="legend-item"><span class="legend-color legend-blue"></span> Delta Wolf (3 Najlepszy)</div>
+            <div class="legend-item"><span class="legend-color legend-yellow"></span> Obecna najlepsza pozycja</div>
+            <div class="legend-item"><span class="legend-color legend-black"></span> Inne wilki</div>
+        </div>
+    </div>
+    <script>
+        class GWO {
+            constructor(populationSize, iterations, bounds, canvas) {
+                this.populationSize = populationSize;
+                this.iterations = iterations;
+                this.bounds = bounds;
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.history = [];
+                this.currentIteration = 0;
+                this.animationId = null;
+                this.isRunning = false;
+                this.initPopulation();
+            }
+            initPopulation() {
+                this.population = [];
+                for (let i = 0; i < this.populationSize; i++) {
+                    const x = Math.random() * (this.bounds.max - this.bounds.min) + this.bounds.min;
+                    const y = Math.random() * (this.bounds.max - this.bounds.min) + this.bounds.min;
+                    this.population.push({ position: [x, y], fitness: 0 });
+                }
+                this.evaluate();
+                this.updateLeaders();
+                this.saveState();
+            }
+            evaluate() {
+                this.population.forEach(wolf => {
+                    wolf.fitness = wolf.position[0] ** 2 + wolf.position[1] ** 2;
+                });
+            }
+            updateLeaders() {
+                this.population.sort((a, b) => a.fitness - b.fitness);
+                this.alpha = this.population[0];
+                this.beta = this.population[1];
+                this.delta = this.population[2];
+            }
+            updatePositions() {
+                const a = 2 * (1 - this.currentIteration / this.iterations);
+                this.population.forEach(wolf => {
+                    const isLeader = (w) =>
+                        (this.alpha && w.position[0] === this.alpha.position[0] && w.position[1] === this.alpha.position[1] && w.fitness === this.alpha.fitness) ||
+                        (this.beta && w.position[0] === this.beta.position[0] && w.position[1] === this.beta.position[1] && w.fitness === this.beta.fitness) ||
+                        (this.delta && w.position[0] === this.delta.position[0] && w.position[1] === this.delta.position[1] && w.fitness === this.delta.fitness);
+                    if (isLeader(wolf)) return;
+                    let newPosition = [0, 0];
+                    const leaders = [this.alpha, this.beta, this.delta];
+                    leaders.forEach(leader => {
+                        if (!leader) return;
+                        const r1 = Math.random(), r2 = Math.random();
+                        const A = 2 * a * r1 - a;
+                        const C = 2 * r2;
+                        const Dx = Math.abs(C * leader.position[0] - wolf.position[0]);
+                        const Dy = Math.abs(C * leader.position[1] - wolf.position[1]);
+                        const X_comp = leader.position[0] - A * Dx;
+                        const Y_comp = leader.position[1] - A * Dy;
+                        newPosition[0] += X_comp;
+                        newPosition[1] += Y_comp;
+                    });
+                    newPosition[0] /= 3;
+                    newPosition[1] /= 3;
+                    wolf.position[0] = Math.max(this.bounds.min, Math.min(this.bounds.max, newPosition[0]));
+                    wolf.position[1] = Math.max(this.bounds.min, Math.min(this.bounds.max, newPosition[1]));
+                });
+            }
+            saveState() {
+                this.history.push({
+                    population: JSON.parse(JSON.stringify(this.population)),
+                    alpha: this.alpha ? JSON.parse(JSON.stringify(this.alpha)) : null,
+                    beta: this.beta ? JSON.parse(JSON.stringify(this.beta)) : null,
+                    delta: this.delta ? JSON.parse(JSON.stringify(this.delta)) : null,
+                    iteration: this.currentIteration
+                });
+            }
+            drawInterpolated(frame, t) {
+                const stateA = this.history[frame];
+                const stateB = this.history[frame + 1] || stateA;
+                if (!stateA) return;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                let grad = this.ctx.createRadialGradient(
+                    this.canvas.width / 2, this.canvas.height / 2, 0,
+                    this.canvas.width / 2, this.canvas.height / 2, this.canvas.width / 1.2
+                );
+                grad.addColorStop(0, "#e0e7ef");
+                grad.addColorStop(1, "#b6c6e0");
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                for (let i = 0; i < stateA.population.length; i++) {
+                    const wolfA = stateA.population[i];
+                    const wolfB = stateB.population[i] || wolfA;
+                    const x = this.lerp(wolfA.position[0], wolfB.position[0], t);
+                    const y = this.lerp(wolfA.position[1], wolfB.position[1], t);
+                    this.ctx.save();
+                    this.ctx.shadowColor = "rgba(44,62,80,0.18)";
+                    this.ctx.shadowBlur = 8;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.mapToCanvas(x, 0), this.mapToCanvas(y, 1), 7, 0, Math.PI * 2);
+                    const isLeader = (w, leader) =>
+                        leader && w.position[0] === leader.position[0] && w.position[1] === leader.position[1] && w.fitness === leader.fitness;
+                    if (isLeader(wolfA, stateA.alpha)) this.ctx.fillStyle = this.getLeaderGradient('alpha', this.mapToCanvas(x, 0), this.mapToCanvas(y, 1));
+                    else if (isLeader(wolfA, stateA.beta)) this.ctx.fillStyle = this.getLeaderGradient('beta', this.mapToCanvas(x, 0), this.mapToCanvas(y, 1));
+                    else if (isLeader(wolfA, stateA.delta)) this.ctx.fillStyle = this.getLeaderGradient('delta', this.mapToCanvas(x, 0), this.mapToCanvas(y, 1));
+                    else this.ctx.fillStyle = "rgba(30,30,30,0.7)";
+
+                    this.ctx.fill();
+                    this.ctx.restore();
+                }
+                this.ctx.save();
+                this.ctx.shadowColor = "#ffb347";
+                this.ctx.shadowBlur = 18;
+                const optimumX = this.mapToCanvas(0, 0);
+                const optimumY = this.mapToCanvas(0, 1);
+                this.ctx.beginPath();
+                this.ctx.arc(optimumX, optimumY, 13, 0, Math.PI * 2);
+                this.ctx.fillStyle = "orange";
+                this.ctx.globalAlpha = 0.7;
+                this.ctx.fill();
+                this.ctx.globalAlpha = 1;
+                this.ctx.restore();
+
+                if (stateA.alpha) {
+                    this.ctx.save();
+                    this.ctx.shadowColor = "#fff700";
+                    this.ctx.shadowBlur = 24;
+                    const alphaX = this.lerp(stateA.alpha.position[0], stateB.alpha ? stateB.alpha.position[0] : stateA.alpha.position[0], t);
+                    const alphaY = this.lerp(stateA.alpha.position[1], stateB.alpha ? stateB.alpha.position[1] : stateA.alpha.position[1], t);
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.mapToCanvas(alphaX, 0), this.mapToCanvas(alphaY, 1), 15, 0, Math.PI * 2);
+                    this.ctx.fillStyle = "yellow";
+                    this.ctx.globalAlpha = 0.7;
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                    this.ctx.restore();
+                }
+                this.ctx.save();
+                this.ctx.shadowColor = "rgba(44,62,80,0.10)";
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = "#2c3e50";
+                this.ctx.font = "bold 18px 'Segoe UI', Arial";
+                this.ctx.fillText(`Iteration: ${Math.round(frame + t)}/${this.iterations}`, 20, 32);
+                this.ctx.font = "16px 'Segoe UI', Arial";
+                this.ctx.fillText(`Best Fitness: ${stateA.alpha ? stateA.alpha.fitness.toExponential(6) : 'N/A'}`, 20, 56);
+                this.ctx.restore();
+            }
+            lerp(a, b, t) {
+                return a + (b - a) * t;
+            }
+
+            getLeaderGradient(type, x, y) {
+                const g = this.ctx.createRadialGradient(x, y, 2, x, y, 7);
+                if (type === 'alpha') {
+                    g.addColorStop(0, "#ff4e50");
+                    g.addColorStop(1, "#f9d423");
+                } else if (type === 'beta') {
+                    g.addColorStop(0, "#43e97b");
+                    g.addColorStop(1, "#38f9d7");
+                } else if (type === 'delta') {
+                    g.addColorStop(0, "#36d1c4");
+                    g.addColorStop(1, "#5b86e5");
+                }
+                return g;
+            }
+
+            draw(iteration) {
+                const state = this.history[iteration];
+                if (!state) return;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                let grad = this.ctx.createRadialGradient(
+                    this.canvas.width / 2, this.canvas.height / 2, 0,
+                    this.canvas.width / 2, this.canvas.height / 2, this.canvas.width / 1.2
+                );
+                grad.addColorStop(0, "#e0e7ef");
+                grad.addColorStop(1, "#b6c6e0");
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                state.population.forEach(wolf => {
+                    this.ctx.save();
+                    this.ctx.shadowColor = "rgba(44,62,80,0.18)";
+                    this.ctx.shadowBlur = 8;
+                    const x = this.mapToCanvas(wolf.position[0], 0);
+                    const y = this.mapToCanvas(wolf.position[1], 1);
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 7, 0, Math.PI * 2);
+                    const isLeader = (w, leader) =>
+                        leader && w.position[0] === leader.position[0] && w.position[1] === leader.position[1] && w.fitness === leader.fitness;
+                    if (isLeader(wolf, state.alpha)) this.ctx.fillStyle = this.getLeaderGradient('alpha', x, y);
+                    else if (isLeader(wolf, state.beta)) this.ctx.fillStyle = this.getLeaderGradient('beta', x, y);
+                    else if (isLeader(wolf, state.delta)) this.ctx.fillStyle = this.getLeaderGradient('delta', x, y);
+                    else this.ctx.fillStyle = "rgba(30,30,30,0.7)";
+                    this.ctx.fill();
+                    this.ctx.restore();
+                });
+                this.ctx.save();
+                this.ctx.shadowColor = "#ffb347";
+                this.ctx.shadowBlur = 18;
+                const optimumX = this.mapToCanvas(0, 0);
+                const optimumY = this.mapToCanvas(0, 1);
+                this.ctx.beginPath();
+                this.ctx.arc(optimumX, optimumY, 13, 0, Math.PI * 2);
+                this.ctx.fillStyle = "orange";
+                this.ctx.globalAlpha = 0.7;
+                this.ctx.fill();
+                this.ctx.globalAlpha = 1;
+                this.ctx.restore();
+
+                if (state.alpha) {
+                    this.ctx.save();
+                    this.ctx.shadowColor = "#fff700";
+                    this.ctx.shadowBlur = 24;
+                    const alphaX = this.mapToCanvas(state.alpha.position[0], 0);
+                    const alphaY = this.mapToCanvas(state.alpha.position[1], 1);
+                    this.ctx.beginPath();
+                    this.ctx.arc(alphaX, alphaY, 15, 0, Math.PI * 2);
+                    this.ctx.fillStyle = "yellow";
+                    this.ctx.globalAlpha = 0.7;
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                    this.ctx.restore();
+                }
+                this.ctx.save();
+                this.ctx.shadowColor = "rgba(44,62,80,0.10)";
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = "#2c3e50";
+                this.ctx.font = "bold 18px 'Segoe UI', Arial";
+                this.ctx.fillText(`Iteracja: ${iteration}/${this.iterations}`, 20, 32);
+                this.ctx.font = "16px 'Segoe UI', Arial";
+                this.ctx.fillText(`Najlepsze dopasowanie: ${state.alpha ? state.alpha.fitness.toExponential(6) : 'N/A'}`, 20, 56);
+                this.ctx.restore();
+            }
+            mapToCanvas(value, dim) {
+                const size = dim ? this.canvas.height : this.canvas.width;
+                const padding = size * 0.13;
+                const range = this.bounds.max - this.bounds.min;
+                if (range === 0) return size / 2;
+                const normalizedValue = (value - this.bounds.min) / range;
+                return normalizedValue * (size - 2 * padding) + padding;
+            }
+            runAll() {
+                this.history = [];
+                this.currentIteration = 0;
+                this.initPopulation();
+                for (let i = 0; i < this.iterations; i++) {
+                    this.updatePositions();
+                    this.evaluate();
+                    this.updateLeaders();
+                    this.currentIteration = i + 1;
+                    this.saveState();
+                }
+            }
+            playAnimation(delay, onEnd) {
+                let frame = 0;
+                let lastTime = null;
+                let t = 0;
+                const animate = (timestamp) => {
+                    if (!lastTime) lastTime = timestamp;
+                    let elapsed = timestamp - lastTime;
+                    t += elapsed / delay;
+                    if (t >= 1) {
+                        frame++;
+                        t = 0;
+                        lastTime = timestamp;
+                    }
+                    if (frame >= this.history.length - 1) {
+                        this.draw(this.history.length - 1);
+                        if (onEnd) onEnd();
+                        return;
+                    }
+                    this.drawInterpolated(frame, t);
+                    frameRange.value = frame;
+                    frameValue.textContent = frame;
+                    this.animationId = requestAnimationFrame(animate);
+                    lastTime = timestamp;
+                };
+                requestAnimationFrame(animate);
+            }
+            stopAnimation() {
+                if (this.animationId) cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+            reset() {
+                this.stopAnimation();
+                this.history = [];
+                this.currentIteration = 0;
+                this.initPopulation();
+                this.draw(0);
+            }
+            setPopulationSize(size) {
+                this.populationSize = size;
+                this.reset();
+            }
+        }
+
+        function addCanvasGradients(canvas) {
+            const ctx = canvas.getContext('2d');
+            let alphaGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 7);
+            alphaGrad.addColorStop(0, "#ff4e50");
+            alphaGrad.addColorStop(1, "#f9d423");
+            let betaGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 7);
+            betaGrad.addColorStop(0, "#43e97b");
+            betaGrad.addColorStop(1, "#38f9d7");
+            let deltaGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 7);
+            deltaGrad.addColorStop(0, "#36d1c4");
+            deltaGrad.addColorStop(1, "#5b86e5");
+            let svg = `
+    <svg width="0" height="0">
+      <defs>
+        <radialGradient id="alphaGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff4e50"/>
+          <stop offset="100%" stop-color="#f9d423"/>
+        </radialGradient>
+        <radialGradient id="betaGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#43e97b"/>
+          <stop offset="100%" stop-color="#38f9d7"/>
+        </radialGradient>
+        <radialGradient id="deltaGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#36d1c4"/>
+          <stop offset="100%" stop-color="#5b86e5"/>
+        </radialGradient>
+      </defs>
+    </svg>
+    `;
+            if (!document.getElementById('canvasGradients')) {
+                let div = document.createElement('div');
+                div.innerHTML = svg;
+                div.style.display = 'none';
+                div.id = 'canvasGradients';
+                document.body.appendChild(div);
+            }
+        }
+        addCanvasGradients(document.getElementById('gwoCanvas'));
+
+        const canvas = document.getElementById('gwoCanvas');
+        const iterationsRange = document.getElementById('iterationsRange');
+        const iterationsValue = document.getElementById('iterationsValue');
+        const delayRange = document.getElementById('delayRange');
+        const delayValue = document.getElementById('delayValue');
+        const frameRange = document.getElementById('frameRange');
+        const frameValue = document.getElementById('frameValue');
+        const maxFrameValue = document.getElementById('maxFrameValue');
+        const runBtn = document.getElementById('runBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const populationRange = document.getElementById('populationRange');
+        const populationValue = document.getElementById('populationValue');
+
+        let gwo = new GWO(50, parseInt(iterationsRange.value), { min: -10, max: 10 }, canvas);
+
+        iterationsRange.addEventListener('input', () => {
+            iterationsValue.textContent = iterationsRange.value;
+            gwo.iterations = parseInt(iterationsRange.value);
+        });
+        delayRange.addEventListener('input', () => {
+            delayValue.textContent = delayRange.value;
+        });
+        frameRange.addEventListener('input', () => {
+            frameValue.textContent = frameRange.value;
+            gwo.draw(parseInt(frameRange.value));
+        });
+        runBtn.addEventListener('click', () => {
+            gwo.stopAnimation();
+            gwo.iterations = parseInt(iterationsRange.value);
+            gwo.runAll();
+            frameRange.max = gwo.history.length - 1;
+            maxFrameValue.textContent = gwo.history.length - 1;
+            frameRange.value = 0;
+            frameValue.textContent = 0;
+            let delay = parseInt(delayRange.value);
+            runBtn.disabled = true;
+            stopBtn.disabled = false;
+            resetBtn.disabled = true;
+            frameRange.disabled = true;
+            gwo.playAnimation(delay, () => {
+                runBtn.disabled = false;
+                stopBtn.disabled = true;
+                resetBtn.disabled = false;
+                frameRange.disabled = false;
+            });
+        });
+        stopBtn.addEventListener('click', () => {
+            gwo.stopAnimation();
+            runBtn.disabled = false;
+            stopBtn.disabled = true;
+            resetBtn.disabled = false;
+            frameRange.disabled = false;
+        });
+        resetBtn.addEventListener('click', () => {
+            gwo.reset();
+            frameRange.max = gwo.history.length - 1;
+            maxFrameValue.textContent = gwo.history.length - 1;
+            frameRange.value = 0;
+            frameValue.textContent = 0;
+            runBtn.disabled = false;
+            stopBtn.disabled = true;
+            resetBtn.disabled = false;
+            frameRange.disabled = false;
+        });
+        populationRange.addEventListener('input', () => {
+            populationValue.textContent = populationRange.value;
+            gwo.setPopulationSize(parseInt(populationRange.value));
+        });
+        gwo.draw(0);
+        frameRange.max = gwo.history.length - 1;
+        maxFrameValue.textContent = gwo.history.length - 1;
+        frameRange.value = 0;
+        frameValue.textContent = 0;
+    </script>
+</body>
+
+</html>
